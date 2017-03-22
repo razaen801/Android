@@ -1,10 +1,10 @@
 # Android
 This repository contains some custom Android stuff: widgets, classes etc.
 
-<h1>Dynamic Dialog Fragment</h1>
+<h2>Dynamic Dialog Fragment</h2>
 <p>This is a fragment that will be shown as an Alert Dialog on large layouts and a Full Screen Fragment on smaller layouts.</p>
 
-<h2>Usage</h2>
+<h3>Usage</h3>
 
 1. Create a layout that will contain the contents you want to display in the dialog, e.g <code>fragment_my_content.xml</code>.
 
