@@ -1,4 +1,4 @@
-package com.wismna.fragments;
+package com.wismna.geoffroy.donext.fragments;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -9,8 +9,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -21,8 +19,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.FrameLayout;
 
-import com.wismna.R;
+import com.wismna.geoffroy.donext.R;
 
 /**
  * Created by wismna on 2017-03-21.
@@ -31,16 +30,14 @@ import com.wismna.R;
  */
 
 public abstract class DynamicDialogFragment extends DialogFragment {
-    private View mDialogView = null;
-    protected boolean mHasNeutralButton = false;
-    protected boolean mIsLargeLayout = false;
-    protected Fragment mContentFragment = new Fragment();
+    boolean mHasNeutralButton = false;
+    int mContentLayoutId = 0;
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         // This part is only needed on small layouts (large layouts use onCreateDialog)
-        if (!mIsLargeLayout) {
+        if (!getShowsDialog()) {
             View view = inflater.inflate(R.layout.fragment_dynamic_dialog, container, false);
             AppCompatActivity activity = (AppCompatActivity) getActivity();
             activity.setSupportActionBar(setToolbarTitle(view));
@@ -52,12 +49,11 @@ public abstract class DynamicDialogFragment extends DialogFragment {
                 actionBar.setHomeAsUpIndicator(android.R.drawable.ic_menu_close_clear_cancel);
             }
             setHasOptionsMenu(true);
-            setContentFragment();
+            insertContentView(view, inflater);
             return view;
         }
-        //return super.onCreateView(inflater, container, savedInstanceState);
-        // Returns the saved view from Dialog Builder on large screens
-        return mDialogView;
+        // This basically returns null
+        return super.onCreateView(inflater, container, savedInstanceState);
     }
 
     @Override
@@ -67,10 +63,9 @@ public abstract class DynamicDialogFragment extends DialogFragment {
         LayoutInflater inflater = getActivity().getLayoutInflater();
         // As it is a Dialog, the root ViewGroup can be null without issues
         @SuppressLint("InflateParams") final View view = inflater.inflate(R.layout.fragment_dynamic_dialog, null);
-        setToolbarTitle(view);
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         Bundle args = getArguments();
-        // Pass null as the parent view because its going in the dialog layout
+        // Set the dialog buttons
         builder.setView(view)
                 // Add action buttons
                 .setPositiveButton(args.getString("button_positive"), new DialogInterface.OnClickListener() {
@@ -94,10 +89,8 @@ public abstract class DynamicDialogFragment extends DialogFragment {
                 }
             });
         }
-        setContentFragment();
-        // Save the View so that it can returned by onCreateView
-        // (otherwise it is null and it poses problems when committing child fragment transactions)
-        mDialogView = view;
+        setToolbarTitle(view);
+        insertContentView(view, inflater);
         return builder.create();
     }
 
@@ -163,15 +156,10 @@ public abstract class DynamicDialogFragment extends DialogFragment {
         super.onDestroyView();
     }
 
-    private void setContentFragment() {
-        // Get the child fragment manager (and not the "normal" one)
-        FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
-
-        // Set the actual content of the fragment
-        transaction.replace(R.id.dynamic_fragment_content, mContentFragment);
-
-        // Commit the transaction instantly
-        transaction.commitNow();
+    /** Helper function to get a View, without having to worry about the fact that is a Dialog or not*/
+    protected View findViewById(int id) {
+        if (getShowsDialog()) return getDialog().findViewById(id);
+        return getView().findViewById(id);
     }
 
     /** Sets the title of the Fragment from the Tag */
@@ -179,6 +167,15 @@ public abstract class DynamicDialogFragment extends DialogFragment {
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.dialog_toolbar);
         toolbar.setTitle(getTag());
         return toolbar;
+    }
+
+    /** Inserts the actual contents in the content Frame Layout */
+    private void insertContentView(View view, LayoutInflater inflater) {
+        // Ensure that the content view is set
+        if (mContentLayoutId == 0) return;
+        // Insert the content view
+        FrameLayout content = (FrameLayout) view.findViewById(R.id.dynamic_fragment_content);
+        content.addView(inflater.inflate(mContentLayoutId, (ViewGroup) view.getParent()));
     }
 
     protected abstract void onPositiveButtonClick(View view);
