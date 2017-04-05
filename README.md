@@ -56,11 +56,9 @@ public static MyDialogFragment newInstance(/*your arguments if needed*/) {
 public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     // This will load your actual content in the Dialog (default is an empty Fragment)
-    mContentFragment = new MyContentFragment();
+    mContentLayoutId = R.layout.fragment_my_content;
     Bundle args = getArguments();
     if (args != null) {
-        // Set this to allow layout size detection (default is false: small layout)
-        mIsLargeLayout = args.getBoolean("layout");
         // Set this to add a third button if needed (default is false: no third button)
         mIsLargeLayout = args.getBoolean("neutral");
     }
@@ -73,8 +71,6 @@ MyDialogFragment myDialogFragment = MyDialogFragment.newInstance();
 
 // Set some configuration values for the dialog
 Bundle args = new Bundle();
-// Information on how to create the mIsLargeLayout property is in the link above
-args.putBoolean("layout", mIsLargeLayout);
 args.putString("button_positive", getString(R.string.your_positive_button_string));
 args.putString("button_negative", getString(R.string.your_negative_button_string));
 // This is needed only if you set a third button in step 4
