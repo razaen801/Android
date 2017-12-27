@@ -1,8 +1,9 @@
-package com.wismna.geoffroy.donext.fragments;
+package com.wismna.fragments;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -22,6 +23,8 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 
+import com.wismna.R;
+
 /**
  * Created by wismna on 2017-03-21.
  * Sub-class this class to create a dynamic fragment that will act as a Dialog in large layouts and
@@ -30,6 +33,9 @@ import android.widget.FrameLayout;
 
 public abstract class DynamicDialogFragment extends DialogFragment {
     int mButtonCount = 2;
+    String mPositiveButtonString = "";
+    String mNeutralButtonString = "";
+    String mNegativeButtonString = "";
     int mContentLayoutId = 0;
 
     @Nullable
@@ -66,28 +72,24 @@ public abstract class DynamicDialogFragment extends DialogFragment {
         // As it is a Dialog, the root ViewGroup can be null without issues
         final View view = inflater.inflate(R.layout.fragment_dynamic_dialog, null);
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        Bundle args = getArguments();
-        // Set the dialog buttons
-        assert args != null;
         // Add action buttons
         builder.setView(view)
-                .setNegativeButton(args.getString("button_negative"), new DialogInterface.OnClickListener() {
+                .setNegativeButton(mNegativeButtonString, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // Send the negative button event back to the host activity
                         // Canceled creation, nothing to do
-                        //dialog.cancel();
                         onNegativeButtonClick();
                     }
                 });
-        if (mButtonCount == 2) {
-            builder.setPositiveButton(args.getString("button_positive"), new DialogInterface.OnClickListener() {
+        if (mButtonCount >= 2) {
+            builder.setPositiveButton(mPositiveButtonString, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     onPositiveButtonClick(view);
                 }
             });
         }
         if (mButtonCount == 3) {
-            builder.setNeutralButton(args.getString("button_neutral"), new DialogInterface.OnClickListener() {
+            builder.setNeutralButton(mNeutralButtonString, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     onNeutralButtonClick(view);
@@ -107,22 +109,31 @@ public abstract class DynamicDialogFragment extends DialogFragment {
 
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
-        Bundle args = getArguments();
-        assert args != null;
-        // Show the neutral button if needed
-        if (mButtonCount < 3) {
-            menu.removeItem(R.id.menu_neutral_button);
-        }
-        else {
-            menu.findItem(R.id.menu_neutral_button).setTitle(args.getString("button_neutral"));
+        /*switch (mButtonCount) {
+            case 1:
+                menu.removeItem(R.id.menu_positive_button);
+                menu.removeItem(R.id.menu_neutral_button);
+                break;
+            case 2:
+                menu.removeItem(R.id.menu_neutral_button);
+                menu.findItem(R.id.menu_positive_button).setTitle(args.getString("button_positive"));
+                break;
+            case 3:
+                menu.findItem(R.id.menu_neutral_button).setTitle(args.getString("button_neutral"));
+                menu.findItem(R.id.menu_positive_button).setTitle(args.getString("button_positive"));
+                break;
+        }*/
+
+        // Hide buttons depending on count
+        switch (mButtonCount) {
+            case 1: menu.removeItem(R.id.menu_positive_button);
+            case 2: menu.removeItem(R.id.menu_neutral_button);
         }
 
-        // Show the positive button if needed
-        if (mButtonCount < 2) {
-            menu.removeItem(R.id.menu_positive_button);
-        }
-        else {
-            menu.findItem(R.id.menu_positive_button).setTitle(args.getString("button_positive"));
+        // Set titles on existing buttons
+        switch (mButtonCount) {
+            case 3: menu.findItem(R.id.menu_neutral_button).setTitle(mNeutralButtonString);
+            case 2: menu.findItem(R.id.menu_positive_button).setTitle(mPositiveButtonString);
         }
         super.onPrepareOptionsMenu(menu);
     }
@@ -189,6 +200,19 @@ public abstract class DynamicDialogFragment extends DialogFragment {
     protected <T extends View> T findViewById(int id) {
         if (getShowsDialog()) return getDialog().findViewById(id);
         return getView().findViewById(id);
+    }
+
+
+    /** Helper method to clear focus by giving it to the parent layout */
+    protected void clearFocus() {
+        View view = getView();
+        if (view != null) {
+            view.requestFocus();
+
+            // Hide keyboard
+            InputMethodManager inputMethodManager = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
     }
 
     /** Sets the title of the Fragment from the Tag */
